@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>BT Control</title>
+<style>
+  :root {
+    --bg: #55b9be;
+    --white: #ffffff;
+    --soft: rgba(255,255,255,0.28);
+    --soft2: rgba(255,255,255,0.18);
+    --text: #55b9be;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: Arial, Helvetica, sans-serif;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #app {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    min-height: 420px;
+  }
+
+  /* Top controls */
+  .top {
+    position: absolute;
+    top: 22px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 18px;
+    z-index: 20;
+  }
+
+  .top-button {
+    width: 42px;
+    height: 42px;
+    border: 0;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.72);
+    color: var(--text);
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .top-button svg {
+    width: 22px;
+    height: 22px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  #btButton.connected {
+    background: rgba(255,255,255,0.95);
+  }
+
+  #btButton.connected svg {
+    stroke-width: 2.5;
+  }
+
+  /* Joysticks */
+  .joystick {
+    position: absolute;
+    top: 17.5%;
+    width: min(26vw, 510px);
+    height: min(26vw, 510px);
+    max-height: 75vh;
+    aspect-ratio: 1;
+    border: 4px solid rgba(255,255,255,0.30);
+    border-radius: 50%;
+  }
+
+  #leftJoy  { left: 4%; }
+  #rightJoy { right: 4%; }
+
+  .joy-track {
+    position: absolute;
+    left: 50%;
+    top: 7%;
+    width: 46px;
+    height: 86%;
+    transform: translateX(-50%);
+    background: rgba(255,255,255,0.11);
+    border-radius: 30px;
+  }
+
+  .arrow {
+    position: absolute;
+    left: 50%;
+    width: 72px;
+    height: 72px;
+    transform: translateX(-50%);
+    opacity: 0.16;
+  }
+
+  .arrow.up { top: 5%; }
+  .arrow.down { bottom: 5%; transform: translateX(-50%) rotate(180deg); }
+
+  .arrow::before,
+  .arrow::after {
+    content: "";
+    position: absolute;
+    background: var(--white);
+    border-radius: 12px;
+  }
+
+  .arrow::before {
+    width: 23px;
+    height: 68px;
+    left: 25px;
+    top: 5px;
+  }
+
+  .arrow::after {
+    width: 43px;
+    height: 23px;
+    left: 15px;
+    top: 5px;
+    clip-path: polygon(0 50%, 50% 0, 100% 50%, 75% 50%, 50% 28%, 25% 50%);
+  }
+
+  .joy-knob {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 150px;
+    height: 150px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: var(--white);
+    cursor: grab;
+    z-index: 5;
+  }
+
+  .joy-knob:active { cursor: grabbing; }
+
+  /* Center controls */
+  .center {
+    position: absolute;
+    left: 50%;
+    top: 43.5%;
+    transform: translate(-50%, -50%);
+    width: 330px;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+  }
+
+  .ab {
+    width: 150px;
+    height: 150px;
+    border: 0;
+    border-radius: 50%;
+    background: var(--white);
+    color: var(--text);
+    font-size: 88px;
+    font-weight: 500;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 0 7px;
+    font-family: Arial, Helvetica, sans-serif;
+  }
+
+  .ab:active,
+  .ab.pressed {
+    transform: scale(0.95);
+    background: rgba(255,255,255,0.78);
+  }
+
+  /* Sliders */
+  .slider-area {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36%;
+    min-width: 420px;
+    max-width: 720px;
+  }
+
+  #slider1Area { top: 15%; }
+  #slider2Area { top: 60%; }
+
+  .slider-label {
+    text-align: center;
+    color: var(--white);
+    font-size: 21px;
+    font-weight: bold;
+    margin-bottom: 28px;
+  }
+
+  #slider2Area .slider-label {
+    margin-top: 34px;
+    margin-bottom: 0;
+  }
+
+  .slider {
+    position: relative;
+    width: 100%;
+    height: 8px;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.30);
+  }
+
+  .slider-knob {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 42px;
+    height: 42px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: var(--white);
+    cursor: grab;
+  }
+
+  .slider-knob:active { cursor: grabbing; }
+
+  /* Status */
+  #status {
+    position: fixed;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255,255,255,0.78);
+    font-size: 13px;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+
+  #status.show { opacity: 1; }
+
+  @media (max-width: 900px) {
+    .joystick {
+      width: min(29vw, 360px);
+      top: 22%;
+    }
+    .joy-knob { width: 105px; height: 105px; }
+    .center { width: 230px; gap: 20px; }
+    .ab { width: 105px; height: 105px; font-size: 62px; }
+    .slider-area { width: 34%; min-width: 260px; }
+    .slider-label { font-size: 16px; }
+    .slider-knob { width: 34px; height: 34px; }
+  }
+
+  @media (max-height: 600px) {
+    .top { top: 10px; }
+    .top-button { width: 34px; height: 34px; }
+    .joystick { top: 16%; width: min(31vh, 330px); }
+    .joy-knob { width: 92px; height: 92px; }
+    .center { top: 45%; }
+    .ab { width: 95px; height: 95px; font-size: 58px; }
+    #slider1Area { top: 27%; }
+    #slider2Area { top: 76%; }
+    #slider2Area .slider-label { margin-top: 22px; }
+  }
+</style>
+</head>
+
+<body>
+<div id="app">
+
+  <div class="top">
+    <button id="btButton" class="top-button" aria-label="Bluetooth connection" title="Bluetooth connection">
+      <svg viewBox="0 0 24 24">
+        <path d="M12 3v18l6-6-12-6 12-6-6-6"/>
+        <path d="M6 6l12 12M6 18L12 12"/>
+      </svg>
+    </button>
+
+    <button id="fullscreenButton" class="top-button" aria-label="Full screen" title="Full screen">
+      <svg viewBox="0 0 24 24">
+        <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M21 16v5h-5"/>
+        <path d="M3 3l6 6M21 3l-6 6M3 21l6-6M21 21l-6-6"/>
+      </svg>
+    </button>
+  </div>
+
+  <div id="leftJoy" class="joystick">
+    <div class="joy-track"></div>
+    <div class="arrow up"></div>
+    <div class="arrow down"></div>
+    <div class="joy-knob"></div>
+  </div>
+
+  <div id="rightJoy" class="joystick">
+    <div class="joy-track"></div>
+    <div class="arrow up"></div>
+    <div class="arrow down"></div>
+    <div class="joy-knob"></div>
+  </div>
+
+  <div id="slider1Area" class="slider-area">
+    <div class="slider-label">SLIDER1</div>
+    <div id="slider1" class="slider">
+      <div class="slider-knob"></div>
+    </div>
+  </div>
+
+  <div id="slider2Area" class="slider-area">
+    <div id="slider2" class="slider">
+      <div class="slider-knob"></div>
+    </div>
+    <div class="slider-label">SLIDER2</div>
+  </div>
+
+  <div class="center">
+    <button id="buttonA" class="ab" aria-label="Button A">A</button>
+    <button id="buttonB" class="ab" aria-label="Button B">B</button>
+  </div>
+
+  <div id="status">Disconnected</div>
+</div>
+
+<script>
+/*
+ * BT Control
+ *
+ * UART format:
+ *   BT [left] [right] [slider1] [slider2] [A] [B]\\n
+ *
+ * Values:
+ *   Joysticks: 0-180, center 90
+ *   Sliders:   0-180
+ *   Buttons:   0 released, 1 pressed
+ *
+ * Transmission period is intentionally hardcoded here.
+ */
+const SEND_PERIOD_MS = 50;
+
+// Nordic UART Service (also used by micro:bit UART service)
+const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
+const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+
+let device = null;
+let rxCharacteristic = null;
+let connected = false;
+
+const state = {
+  left: 90,
+  right: 90,
+  slider1: 90,
+  slider2: 90,
+  A: 0,
+  B: 0
+};
+
+const btButton = document.getElementById('btButton');
+const fullscreenButton = document.getElementById('fullscreenButton');
+const status = document.getElementById('status');
+
+function showStatus(text, temporary = true) {
+  status.textContent = text;
+  status.classList.add('show');
+  if (temporary) {
+    clearTimeout(showStatus.timer);
+    showStatus.timer = setTimeout(() => status.classList.remove('show'), 1800);
+  }
+}
+
+function setConnected(value) {
+  connected = value;
+  btButton.classList.toggle('connected', value);
+  if (!value) {
+    rxCharacteristic = null;
+  }
+}
+
+async function connectBluetooth() {
+  if (!navigator.bluetooth) {
+    showStatus('Web Bluetooth is not supported');
+    return;
+  }
+
+  try {
+    showStatus('Select Bluetooth device...');
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ services: [UART_SERVICE_UUID] }]
+    });
+
+    device.addEventListener('gattserverdisconnected', onDisconnected);
+
+    showStatus('Connecting...');
+    const server = await device.gatt.connect();
+    const service = await server.getPrimaryService(UART_SERVICE_UUID);
+
+    rxCharacteristic = await service.getCharacteristic(UART_RX_UUID);
+
+    // TX notifications are not required for sending, but enabling them
+    // makes the app ready for future incoming UART data.
+    try {
+      const tx = await service.getCharacteristic(UART_TX_UUID);
+      await tx.startNotifications();
+      tx.addEventListener('characteristicvaluechanged', handleIncomingData);
+    } catch (e) {
+      // Some UART devices expose only the write characteristic.
+    }
+
+    setConnected(true);
+    showStatus('Bluetooth connected');
+  } catch (error) {
+    console.log(error);
+    setConnected(false);
+
+    if (error.name === 'NotFoundError') {
+      showStatus('No device selected');
+    } else {
+      showStatus('Bluetooth connection failed');
+    }
+  }
+}
+
+function onDisconnected() {
+  setConnected(false);
+  showStatus('Bluetooth disconnected');
+}
+
+async function disconnectBluetooth() {
+  if (device && device.gatt && device.gatt.connected) {
+    device.gatt.disconnect();
+  }
+  setConnected(false);
+  showStatus('Bluetooth disconnected');
+}
+
+btButton.addEventListener('click', async () => {
+  if (connected) {
+    await disconnectBluetooth();
+  } else {
+    await connectBluetooth();
+  }
+});
+
+fullscreenButton.addEventListener('click', async () => {
+  try {
+    if (!document.fullscreenElement) {
+      await document.documentElement.requestFullscreen();
+    } else {
+      await document.exitFullscreen();
+    }
+  } catch (e) {
+    showStatus('Full screen unavailable');
+  }
+});
+
+function handleIncomingData(event) {
+  // Reserved for future two-way Bluetooth communication.
+  // The controller currently only sends UART data.
+}
+
+async function sendUART() {
+  if (!connected || !rxCharacteristic) return;
+
+  const message =
+    `BT ${state.left} ${state.right} ${state.slider1} ${state.slider2} ${state.A} ${state.B}\n`;
+
+  try {
+    const data = new TextEncoder().encode(message);
+
+    if (rxCharacteristic.writeValueWithoutResponse) {
+      await rxCharacteristic.writeValueWithoutResponse(data);
+    } else {
+      await rxCharacteristic.writeValue(data);
+    }
+  } catch (error) {
+    console.log('UART send error:', error);
+    if (device && !device.gatt.connected) onDisconnected();
+  }
+}
+
+// Continuous state transmission.
+// Change SEND_PERIOD_MS above to alter the sending interval.
+setInterval(sendUART, SEND_PERIOD_MS);
+
+
+/* ---------- Vertical joysticks ---------- */
+
+function setupJoystick(elementId, stateKey) {
+  const joystick = document.getElementById(elementId);
+  const knob = joystick.querySelector('.joy-knob');
+
+  let activePointer = null;
+
+  function updateFromPointer(clientY) {
+    const rect = joystick.getBoundingClientRect();
+    const knobRadius = knob.getBoundingClientRect().height / 2;
+
+    const top = rect.top + knobRadius;
+    const bottom = rect.bottom - knobRadius;
+
+    const y = Math.max(top, Math.min(bottom, clientY));
+    const ratio = (bottom - y) / (bottom - top);
+
+    // Top = 180, center = 90, bottom = 0.
+    state[stateKey] = Math.round(ratio * 180);
+
+    knob.style.top = `${((y - rect.top) / rect.height) * 100}%`;
+  }
+
+  function center() {
+    state[stateKey] = 90;
+    knob.style.top = '50%';
+  }
+
+  joystick.addEventListener('pointerdown', e => {
+    activePointer = e.pointerId;
+    joystick.setPointerCapture(e.pointerId);
+    updateFromPointer(e.clientY);
+  });
+
+  joystick.addEventListener('pointermove', e => {
+    if (e.pointerId === activePointer) updateFromPointer(e.clientY);
+  });
+
+  function release(e) {
+    if (e.pointerId === activePointer) {
+      activePointer = null;
+      center();
+    }
+  }
+
+  joystick.addEventListener('pointerup', release);
+  joystick.addEventListener('pointercancel', release);
+  joystick.addEventListener('lostpointercapture', () => {
+    activePointer = null;
+    center();
+  });
+
+  window.addEventListener('blur', center);
+  center();
+}
+
+setupJoystick('leftJoy', 'left');
+setupJoystick('rightJoy', 'right');
+
+
+/* ---------- Horizontal sliders ---------- */
+
+function setupSlider(elementId, stateKey) {
+  const slider = document.getElementById(elementId);
+  const knob = slider.querySelector('.slider-knob');
+  let activePointer = null;
+
+  function update(clientX) {
+    const rect = slider.getBoundingClientRect();
+    const knobRadius = knob.getBoundingClientRect().width / 2;
+
+    const left = rect.left + knobRadius;
+    const right = rect.right - knobRadius;
+    const x = Math.max(left, Math.min(right, clientX));
+    const ratio = (x - left) / (right - left);
+
+    state[stateKey] = Math.round(ratio * 180);
+    knob.style.left = `${((x - rect.left) / rect.width) * 100}%`;
+  }
+
+  slider.addEventListener('pointerdown', e => {
+    activePointer = e.pointerId;
+    slider.setPointerCapture(e.pointerId);
+    update(e.clientX);
+  });
+
+  slider.addEventListener('pointermove', e => {
+    if (e.pointerId === activePointer) update(e.clientX);
+  });
+
+  function release(e) {
+    if (e.pointerId === activePointer) activePointer = null;
+  }
+
+  slider.addEventListener('pointerup', release);
+  slider.addEventListener('pointercancel', release);
+
+  // Recalculate visual position after resize.
+  window.addEventListener('resize', () => {
+    const ratio = state[stateKey] / 180;
+    knob.style.left = `${ratio * 100}%`;
+  });
+
+  knob.style.left = '50%';
+}
+
+setupSlider('slider1', 'slider1');
+setupSlider('slider2', 'slider2');
+
+
+/* ---------- A / B buttons ---------- */
+
+function setupButton(id, key) {
+  const button = document.getElementById(id);
+
+  function press(e) {
+    e.preventDefault();
+    state[key] = 1;
+    button.classList.add('pressed');
+  }
+
+  function release(e) {
+    e.preventDefault();
+    state[key] = 0;
+    button.classList.remove('pressed');
+  }
+
+  button.addEventListener('pointerdown', press);
+  button.addEventListener('pointerup', release);
+  button.addEventListener('pointercancel', release);
+  button.addEventListener('pointerleave', e => {
+    if (state[key]) release(e);
+  });
+}
+
+setupButton('buttonA', 'A');
+setupButton('buttonB', 'B');
+
+// Safety: never leave A/B stuck if the browser loses focus.
+window.addEventListener('blur', () => {
+  state.A = 0;
+  state.B = 0;
+  document.getElementById('buttonA').classList.remove('pressed');
+  document.getElementById('buttonB').classList.remove('pressed');
+});
+</script>
+</body>
+</html>
