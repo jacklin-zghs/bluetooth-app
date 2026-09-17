@@ -395,7 +395,10 @@ async function connectBluetooth() {
     showStatus('Select Bluetooth device...');
     device = await navigator.bluetooth.requestDevice({
 <!--     filters: [{ services: [UART_SERVICE_UUID] }]  --> 
-    acceptAllDevices: true,
+    filters: [
+      { namePrefix: 'BBC micro:bit' },
+      { namePrefix: 'micro:bit' }
+    ],
     optionalServices: [UART_SERVICE_UUID]
     });
 
