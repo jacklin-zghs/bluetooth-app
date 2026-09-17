@@ -394,7 +394,9 @@ async function connectBluetooth() {
   try {
     showStatus('Select Bluetooth device...');
     device = await navigator.bluetooth.requestDevice({
-      filters: [{ services: [UART_SERVICE_UUID] }]
+<!--     filters: [{ services: [UART_SERVICE_UUID] }]  --> 
+    acceptAllDevices: true,
+    optionalServices: [UART_SERVICE_UUID]
     });
 
     device.addEventListener('gattserverdisconnected', onDisconnected);
