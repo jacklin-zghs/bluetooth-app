@@ -344,13 +344,15 @@
  *
  * Transmission period is intentionally hardcoded here.
  */
-const SEND_PERIOD_MS = 50;
+const SEND_PERIOD_MS = 100;
 
 // Nordic UART Service (also used by micro:bit UART service)
 const UART_SERVICE_UUID = '6e400001-b5a3-f393-e0a9-e50e24dcca9e';
-const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
-const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
-
+//const UART_RX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // write
+//const UART_TX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // notify
+const UART_TX_UUID      = '6e400002-b5a3-f393-e0a9-e50e24dcca9e'; // notify (從 micro:bit 收)
+const UART_RX_UUID      = '6e400003-b5a3-f393-e0a9-e50e24dcca9e'; // write  (傳給 micro:bit)
+  
 let device = null;
 let rxCharacteristic = null;
 let connected = false;
@@ -475,9 +477,10 @@ function handleIncomingData(event) {
 async function sendUART() {
   if (!connected || !rxCharacteristic) return;
 
+  //const message =
+  //  `BT ${state.left} ${state.right} ${state.slider1} ${state.slider2} ${state.A} ${state.B}\n`;
   const message =
-    `BT ${state.left} ${state.right} ${state.slider1} ${state.slider2} ${state.A} ${state.B}\n`;
-
+    `BT ${String(state.left).padStart(3, '0')} ${String(state.right).padStart(3, '0')} ${String(state.slider1).padStart(3, '0')} ${String(state.slider2).padStart(3, '0')}\n`;
   try {
     const data = new TextEncoder().encode(message);
 
