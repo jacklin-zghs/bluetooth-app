@@ -193,8 +193,12 @@
     width: 36%;
     min-width: 420px;
     max-width: 720px;
+   pointer-events: none; /* <--- ADD THIS: Allows mouse/touch to click through transparent gaps */   
   }
-
+  /* Add this right below .slider-area */
+  .slider-area * {
+    pointer-events: auto; /* <--- ADD THIS: Keeps the sliders and labels clickable */
+  }
   #slider1Area { top: 15%; }
   #slider2Area { top: 60%; }
 
