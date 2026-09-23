@@ -463,12 +463,30 @@ btButton.addEventListener('click', async () => {
 
 fullscreenButton.addEventListener('click', async () => {
   try {
-    if (!document.fullscreenElement) {
-      await document.documentElement.requestFullscreen();
+    const doc = document;
+    const docEl = document.documentElement;
+
+    const isFS = doc.fullscreenElement || doc.webkitFullscreenElement || doc.mozFullScreenElement || doc.msFullscreenElement;
+
+    if (!isFS) {
+      if (docEl.requestFullscreen) {
+        await docEl.requestFullscreen();
+      } else if (docEl.webkitRequestFullscreen) { /* Safari / older Edge */
+        await docEl.webkitRequestFullscreen();
+      } else if (docEl.msRequestFullscreen) { /* IE/Edge */
+        await docEl.msRequestFullscreen();
+      }
     } else {
-      await document.exitFullscreen();
+      if (doc.exitFullscreen) {
+        await doc.exitFullscreen();
+      } else if (doc.webkitExitFullscreen) {
+        await doc.webkitExitFullscreen();
+      } else if (doc.msExitFullscreen) {
+        await doc.msExitFullscreen();
+      }
     }
   } catch (e) {
+    console.error('Fullscreen error:', e);
     showStatus('Full screen unavailable');
   }
 });
@@ -564,7 +582,15 @@ function setupJoystick(elementId, stateKey) {
 setupJoystick('leftJoy', 'left');
 setupJoystick('rightJoy', 'right');
 
-
+document.addEventListener('fullscreenchange', () => {
+  state.left = 90;
+  state.right = 90;
+  const leftKnob = document.querySelector('#leftJoy .joy-knob');
+  const rightKnob = document.querySelector('#rightJoy .joy-knob');
+  if (leftKnob) leftKnob.style.top = '50%';
+  if (rightKnob) rightKnob.style.top = '50%';
+});
+  
 /* ---------- Horizontal sliders ---------- */
 
 function setupSlider(elementId, stateKey) {
